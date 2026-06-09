@@ -74,3 +74,98 @@ def add_feedback():
         "success": True,
         "message": "回饋送出成功"
     }), 201
+
+
+# 查詢我的回饋
+@feedback.route("/api/feedback/my", methods=["GET"])
+def get_my_feedback():
+
+    # 檢查是否登入
+    if "user_id" not in session:
+
+        return jsonify({
+            "success": False,
+            "message": "尚未登入"
+        }), 401
+
+    # 取得目前登入者ID
+    user_id = session["user_id"]
+
+    # 連線資料庫
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # 查詢自己的回饋資料
+    cursor.execute(
+        """
+        SELECT
+            form_id,
+            question_content
+        FROM Feedback_Forms
+        WHERE user_id = %s
+        ORDER BY form_id DESC
+        """,
+        (user_id,)
+    )
+
+    feedback_list = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "feedback": feedback_list
+    })
+
+
+# 刪除回饋
+@feedback.route("/api/feedback/<int:form_id>", methods=["DELETE"])
+def delete_feedback(form_id):
+
+    # 檢查是否登入
+    if "user_id" not in session:
+
+        return jsonify({
+            "success": False,
+            "message": "尚未登入"
+        }), 401
+
+    # 取得登入者ID
+    user_id = session["user_id"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # 只能刪除自己的回饋
+    cursor.execute(
+        """
+        DELETE FROM Feedback_Forms
+        WHERE form_id = %s
+        AND user_id = %s
+        """,
+        (
+            form_id,
+            user_id
+        )
+    )
+
+    conn.commit()
+
+    # 看看有沒有真的刪到資料
+    deleted_count = cursor.rowcount
+
+    cursor.close()
+    conn.close()
+
+    if deleted_count == 0:
+
+        return jsonify({
+            "success": False,
+            "message": "找不到回饋資料"
+        }), 404
+
+    return jsonify({
+        "success": True,
+        "message": "刪除成功"
+    })

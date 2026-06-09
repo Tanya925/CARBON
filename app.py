@@ -1,4 +1,5 @@
 ﻿from flask import Flask, jsonify
+from flask_cors import CORS
 
 from routes.auth_route import auth
 from routes.transport_route import transport
@@ -7,6 +8,7 @@ from routes.analysis_route import analysis
 from routes.feedback_route import feedback
 
 app = Flask(__name__)
+CORS(app)
 
 app.secret_key = "your_secret_key"
 
@@ -32,3 +34,4 @@ if __name__ == "__main__":
         port=3000,
         debug=True
     )
+
